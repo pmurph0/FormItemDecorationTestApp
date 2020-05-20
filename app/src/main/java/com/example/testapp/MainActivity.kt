@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.testapp.FormItem.RowType.*
 import kotlinx.android.synthetic.main.activity_main.*
+import java.util.ArrayList
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,31 +21,38 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
 
-        recyclerView.adapter = Adapter(listOf(
-            Any(),
-            Any(),
-            object : FormItem {
-                override val rowType: FormItem.RowType
-                    get() = TOP_ROW
-            },
-            object : FormItem {
-                override val rowType: FormItem.RowType
-                    get() = MIDDLE_ROW
-            },
-            object : FormItem {
-                override val rowType: FormItem.RowType
-                    get() = BOTTOM_ROW
-            },
-            Any(),
-            Any(),
-            Any(),
-            object : FormItem {
-                override val rowType: FormItem.RowType
-                    get() = SINGULAR_ROW
-            }
-        ))
+        recyclerView.adapter = Adapter(buildItemList())
         recyclerView.addItemDecoration(FormItemDecoration(resources.getDimensionPixelOffset(R.dimen.dp_4),
             resources.getDimensionPixelOffset(R.dimen.dp_1)))
+    }
+
+    private fun buildItemList(): List<Any> {
+        return ArrayList<Any>().apply {
+            add(Any())
+            add(Any())
+            add(formItem(SINGULAR_ROW))
+            add(Any())
+            add(formItem(TOP_ROW))
+            add(formItem(BOTTOM_ROW))
+            add(Any())
+            add(formItem(TOP_ROW))
+            add(formItem(MIDDLE_ROW))
+            add(formItem(BOTTOM_ROW))
+            add(Any())
+            add(Any())
+
+            for (i in 0 until 100) {
+                add(Any())
+            }
+        }
+
+    }
+
+    fun formItem(rowType: FormItem.RowType): FormItem {
+        return object: FormItem {
+            override val rowType: FormItem.RowType
+                get() = rowType
+        }
     }
 }
 
