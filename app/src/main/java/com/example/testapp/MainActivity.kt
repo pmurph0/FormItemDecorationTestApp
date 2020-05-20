@@ -23,33 +23,41 @@ class MainActivity : AppCompatActivity() {
         recyclerView.adapter = Adapter(listOf(
             Any(),
             Any(),
-            object: FormItem {
+            object : FormItem {
                 override val rowType: FormItem.RowType
                     get() = TOP_ROW
             },
-            object: FormItem {
+            object : FormItem {
                 override val rowType: FormItem.RowType
                     get() = MIDDLE_ROW
             },
-            object: FormItem {
+            object : FormItem {
                 override val rowType: FormItem.RowType
                     get() = BOTTOM_ROW
             },
             Any(),
             Any(),
             Any(),
-            object: FormItem {
+            object : FormItem {
                 override val rowType: FormItem.RowType
                     get() = SINGULAR_ROW
             }
         ))
-        recyclerView.addItemDecoration(FormItemDecoration(resources.getDimensionPixelOffset(R.dimen.dp_4)))
+        recyclerView.addItemDecoration(FormItemDecoration(resources.getDimensionPixelOffset(R.dimen.dp_4),
+            resources.getDimensionPixelOffset(R.dimen.dp_1)))
     }
 }
 
-class Adapter(override val items: List<*>): RecyclerView.Adapter<RecyclerView.ViewHolder>(), RecyclerViewAdapter {
+class Adapter(override val items: List<*>) : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
+    RecyclerViewAdapter {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return object: RecyclerView.ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item, parent, false)){}
+        return object : RecyclerView.ViewHolder(
+            LayoutInflater.from(parent.context).inflate(
+                R.layout.item,
+                parent,
+                false
+            )
+        ) {}
     }
 
     override fun getItemCount() = items.size
@@ -60,44 +68,17 @@ class Adapter(override val items: List<*>): RecyclerView.Adapter<RecyclerView.Vi
 
 interface FormItem {
     val rowType: RowType
+
     enum class RowType {
         TOP_ROW, MIDDLE_ROW, BOTTOM_ROW, SINGULAR_ROW
     }
-
-    val itemViewType: Int get() =rowType.name.hashCode()
-
-
-
-    companion object {
-        fun rowTypeFor(collectionSize: Int, itemIndex: Int): RowType {
-            if (collectionSize == 1) return RowType.SINGULAR_ROW
-
-            if (collectionSize == 2) return if (itemIndex == 0) RowType.TOP_ROW else RowType.BOTTOM_ROW
-
-            return when (itemIndex) {
-                0 -> RowType.TOP_ROW
-                collectionSize - 1 -> RowType.BOTTOM_ROW
-                else -> MIDDLE_ROW
-            }
-        }
-
-        fun fromItemViewType(viewType: Int): RowType? {
-            return when (viewType) {
-                RowType.TOP_ROW.name.hashCode() -> RowType.TOP_ROW
-                MIDDLE_ROW.name.hashCode() -> MIDDLE_ROW
-                RowType.BOTTOM_ROW.name.hashCode() -> MIDDLE_ROW
-                RowType.SINGULAR_ROW.name.hashCode() -> MIDDLE_ROW
-                else -> null
-            }
-        }
-    }
 }
 
-class FormItemDecoration(val radius: Int): RecyclerView.ItemDecoration() {
+class FormItemDecoration(private val radius: Int, thickness: Int) : RecyclerView.ItemDecoration() {
 
     private val paint = Paint().apply {
-        strokeWidth = 1f    //TODO
-        color = Color.BLACK //TODO
+        strokeWidth = thickness.toFloat()
+        color = Color.BLACK
         style = Paint.Style.STROKE
     }
 
@@ -108,25 +89,36 @@ class FormItemDecoration(val radius: Int): RecyclerView.ItemDecoration() {
             val view: View = parent.getChildAt(i)
 
             val adapterPosition = parent.getChildAdapterPosition(view)
-            val rowType = ((parent.adapter as? RecyclerViewAdapter ?: return).items[adapterPosition] as? FormItem)?.rowType ?: continue
+            val rowType = ((parent.adapter as? RecyclerViewAdapter
+                ?: return).items[adapterPosition] as? FormItem)?.rowType ?: continue
 
             when (rowType) {
-                FormItem.RowType.TOP_ROW -> drawTopRow(c, view)
+                TOP_ROW -> drawTopRow(c, view)
                 MIDDLE_ROW -> drawMiddleRow(c, view)
-                FormItem.RowType.BOTTOM_ROW -> drawBottomRow(c, view)
-                FormItem.RowType.SINGULAR_ROW -> drawSingularRow(c, view)
+                BOTTOM_ROW -> drawBottomRow(c, view)
+                SINGULAR_ROW -> drawSingularRow(c, view)
             }
         }
     }
 
     private fun drawSingularRow(c: Canvas, view: View) {
-        c.drawRoundRect(view.left.toFloat(), view.top.toFloat(), view.right.toFloat(), view.bottom.toFloat(), radius.toFloat(), radius.toFloat(), paint)
+        c.drawRoundRect(
+            view.left.toFloat(),
+            view.top.toFloat(),
+            view.right.toFloat(),
+            view.bottom.toFloat(),
+            radius.toFloat(),
+            radius.toFloat(),
+            paint
+        )
     }
 
     private fun drawBottomRow(c: Canvas, view: View) {
-        //todo rounded corners
-        c.drawLine(view.left.toFloat(), view.top.toFloat(), view.left.toFloat(), view.bottom.toFloat(), paint)
-        c.drawLine(view.right.toFloat(), view.top.toFloat(), view.right.toFloat(), view.bottom.toFloat(), paint)
+    val path = roundedRect(view.left.toFloat(), view.top.toFloat(), view.right.toFloat(),
+        view.bottom.toFloat(), radius.toFloat(), radius.toFloat(),
+            tl = false, tr = false, br = true, bl = true)
+        c.drawPath(path, paint)
+
     }
 
     private fun drawMiddleRow(c: Canvas, view: View) {
@@ -139,20 +131,13 @@ class FormItemDecoration(val radius: Int): RecyclerView.ItemDecoration() {
             lineTo(view.right.toFloat(), view.bottom.toFloat())
         }
         c.drawPath(path, paint)
-
-//        c.drawLine(view.left.toFloat(), view.top.toFloat(), view.left.toFloat(), view.bottom.toFloat(), paint)
-//        c.drawLine(view.right.toFloat(), view.top.toFloat(), view.right.toFloat(), view.bottom.toFloat(), paint)
-//        c.drawLine(view.left.toFloat(), view.bottom.toFloat(), view.right.toFloat(), view.bottom.toFloat(), paint)
     }
 
     private fun drawTopRow(c: Canvas, view: View) {
-        val path = roundedRect(view.left.toFloat(), view.top.toFloat(), view.right.toFloat(), view.bottom.toFloat(), radius.toFloat(), radius.toFloat(), topCornersOnly = true)
+        val path = roundedRect(view.left.toFloat(), view.top.toFloat(), view.right.toFloat(),
+            view.bottom.toFloat(), radius.toFloat(), radius.toFloat(),
+            tl = true, tr = true, br = false, bl = false)
         c.drawPath(path, paint)
-
-//        //todo rounded corners
-//        c.drawLine(view.left.toFloat(), view.top.toFloat(), view.left.toFloat(), view.bottom.toFloat(), paint)  //todo rounded corners
-//        c.drawLine(view.right.toFloat(), view.top.toFloat(), view.right.toFloat(), view.bottom.toFloat(), paint)
-//        c.drawLine(view.left.toFloat(), view.bottom.toFloat(), view.right.toFloat(), view.bottom.toFloat(), paint)
     }
 
 }
@@ -164,7 +149,10 @@ fun roundedRect(
     bottom: Float,
     rx: Float,
     ry: Float,
-    topCornersOnly: Boolean
+    tl: Boolean,
+    tr: Boolean,
+    br: Boolean,
+    bl: Boolean
 ): Path {
     var rx = rx
     var ry = ry
@@ -178,34 +166,28 @@ fun roundedRect(
     val widthMinusCorners = width - 2 * rx
     val heightMinusCorners = height - 2 * ry
     path.moveTo(right, top + ry)
-    path.arcTo(right - 2 * rx, top, right, top + 2 * ry, 0f, -90f, false) //top-right-corner
-    path.rLineTo(-widthMinusCorners, 0f)
-    path.arcTo(left, top, left + 2 * rx, top + 2 * ry, 270f, -90f, false) //top-left corner.
-    path.rLineTo(0f, heightMinusCorners)
-    if (topCornersOnly) {
-        path.rLineTo(0f, ry)
-        path.rLineTo(width, 0f)
+    if (tr) path.rQuadTo(0f, -ry, -rx, -ry) //top-right corner
+    else {
         path.rLineTo(0f, -ry)
-    } else {
-        path.arcTo(
-            left,
-            bottom - 2 * ry,
-            left + 2 * rx,
-            bottom,
-            180f,
-            -90f,
-            false
-        ) //bottom-left corner
-        path.rLineTo(widthMinusCorners, 0f)
-        path.arcTo(
-            right - 2 * rx,
-            bottom - 2 * ry,
-            right,
-            bottom,
-            90f,
-            -90f,
-            false
-        ) //bottom-right corner
+        path.rLineTo(-rx, 0f)
+    }
+    path.rLineTo(-widthMinusCorners, 0f)
+    if (tl) path.rQuadTo(-rx, 0f, -rx, ry) //top-left corner
+    else {
+        path.rLineTo(-rx, 0f)
+        path.rLineTo(0f, ry)
+    }
+    path.rLineTo(0f, heightMinusCorners)
+    if (bl) path.rQuadTo(0f, ry, rx, ry) //bottom-left corner
+    else {
+        path.rLineTo(0f, ry)
+        path.rLineTo(rx, 0f)
+    }
+    path.rLineTo(widthMinusCorners, 0f)
+    if (br) path.rQuadTo(rx, 0f, rx, -ry) //bottom-right corner
+    else {
+        path.rLineTo(rx, 0f)
+        path.rLineTo(0f, -ry)
     }
     path.rLineTo(0f, -heightMinusCorners)
     path.close() //Given close, last lineto can be removed.
